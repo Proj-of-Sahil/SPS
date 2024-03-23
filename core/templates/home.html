@@ -1,0 +1,73 @@
+{% extends './layout/base.html' %}
+{% block content %}
+
+<!-- Write html code here -->
+<script src="{{ url_for('static', filename='/assets/js/main.js') }}"></script>
+
+<h1>Rock Paper Scissors</h1>
+<h3 id="status">Not in Lobby</h3>
+<p id="message"></p>
+<p id="winner"></p>
+<label for="name">Lobby Number: <input type="number" value="1"></label>
+<button type="button" onclick="joinLobby()" id="connectButton">Connect</button>
+<button type="button" onclick="leaveLobby()" id="connectButton">Disconnect</button>
+
+<br>
+
+<button type="button" onclick="triggerEvent('Stone')">Stone</button>
+<button type="button" onclick="triggerEvent('Paper')">Paper</button>
+<button type="button" onclick="triggerEvent('Scissor')">Scissor</button>
+
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"
+    integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO"
+    crossorigin="anonymous"></script>
+<script type="text/javascript" charset="utf-8">
+    var lobbyID = 0;
+    var socket = io();
+
+    function leaveLobby() {
+        socket.emit('leave_lobby', JSON.stringify({ lobby_id: lobbyID }));
+        lobbyID = 0;
+        document.getElementById('message').innerText = 'Disconnected';
+        document.getElementById('status').innerText = 'Not in Lobby';
+    }
+
+    function joinLobby() {
+        var tempLobbyID = parseInt(document.querySelector('input').value);
+        socket.emit('join_lobby', JSON.stringify({ lobby_id: tempLobbyID }));
+
+        socket.on('join_status', function (data) {
+            console.log(data.success);
+
+            if (data.success === true) {
+                lobbyID = tempLobbyID;
+                document.getElementById('message').innerText = 'Connected';
+                document.getElementById('status').innerText = 'In Lobby ' + lobbyID;
+            } else {
+                document.getElementById('message').innerText = data.message;
+                console.log(data.message)
+            }
+        });
+    }
+
+    function triggerEvent(userChoice) {
+        console.log(userChoice);
+        if (lobbyID === 0 || lobbyID === '') {
+            alert('Please enter lobby number');
+            return;
+        }
+        socket.emit('game', JSON.stringify({ userChoice: userChoice, lobbyID: lobbyID }));
+
+        socket.on('game_winner', function (data) {
+            console.log(data);
+            document.getElementById('winner').innerText = data.winner + ' is winner!';
+
+        });
+    }
+
+
+</script>
+
+
+{% endblock content%}
